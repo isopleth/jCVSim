@@ -1,0 +1,61 @@
+Next JCVsim
+
+1. Carry out the same changes for the 6 compartment model.
+
+JCVsim Version V1.004:
+======================
+
+1. Tidy strip and XY plots
+
+JCVsim Version V1.003:
+======================
+
+1. Select off control buttons at program start.
+2. Various internal code cleanup.
+
+JCVsim Version V1.002:
+======================
+
+1. Use named indices for time[] and time_new[] in Data_vector.
+
+JCVsim Version V1.001:
+======================
+
+1. Rename tbv/TBV to totalBloodVolume and Pth/PTH to intraThoracicPressure
+
+
+JCVsim Version V1.0:
+====================
+
+1. Various internal changes to the 21 compartment model to improve code readability, e.g.
+
+p->dxdt[16] = ((p->x[24] - p->x[16]) * p->dcdt[1] + p->q[19] - p->q[20]) / p->c[1] + p->dxdt[24];
+
+into:
+
+p.dPressureDt[RIGHT_VENTRICULAR_CPI] = ((p.pressure[INTRA_THORACIC_CPI] - p.pressure[RIGHT_VENTRICULAR_CPI]) * p.dComplianceDt[RV_COMPL] +
+p.flowRate[LEFT_ATRIAL_CPI] - p.flowRate[LEFT_VENTRICULAR_CPI]) / p.compliance[RV_COMPL] + p.dPressureDt[INTRA_THORACIC_CPI];
+
+2. Some general tidying up of GUI code, e.g. classes start with upper case letter, add @override tag (which
+didn't exist when code originally written) etc.
+
+JCVsim Version 0.001:
+=====================
+
+1. Replace Parameter_vector array with hashmap in 6 and 21 compartment models.
+2. Remove the unused map_sigma_ptr() method which laoded parameter vector with std errors.
+3. Remove the unused 6 and 21 compartment Simulator classes.
+4. Improve comments & internal documentation.
+
+
+JCVsim Version 0.0:
+===================
+
+1. Port C etc to Java renamed Jcvsim, and distributed as single jar file.
+2. Incorporates source code for net.infonode rather than class files.
+3. Uses JSE Swing implementation of jdesktop.GroupLayout.
+4. Fixes CVsim index array out of bounds in Turning.turning() - CVsim Turning.c turning().
+5. Warns NaN in Turning.slope() - CVsim Turning.c slope().
+6. Checks for NaN returned from trig functions.
+7. Use single Turning class to replace 6/21 compartment Turning.c files
+8. Renamed JCVsim - main window title and \"about\" window updated
