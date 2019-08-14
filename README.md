@@ -16,9 +16,9 @@ The original CVSim program is a Java GUI wrapped around a simulation
 engine written in C.  I converted it to Java, making changes on the
 way to improve readability.  The most important of these were to
 change lots of array indices to symbolic names.  CVSim itself is
-available from https://physionet.org/content/cvsim/1.0.0/ and there is
-plenty of documentation about it, which is also largely applicable to
-my version of it, there.
+described at https://physionet.org/content/cvsim/1.0.0/ and there is
+plenty of documentation about it that is also largely applicable to
+my fork of it. The source code for CVSim is at https://github.com/MIT-LCP/cvsim 
 
 ![screenshot](/screenshot.png)
 
