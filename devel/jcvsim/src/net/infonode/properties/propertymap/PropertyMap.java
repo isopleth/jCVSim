@@ -163,8 +163,8 @@ public interface PropertyMap extends ReadWritable {
    * not A.X! Getting B.X now returns 5 and B.Y also returns 5.</li>
    * <li>X is set to 7 in B. Getting B.Y will now return 7 as expected. Map A is unchanged and will still return
    * 5 as value for property Y.</li>
-   * <li>A.Y is set to 1 which destroys the reference to A.X, and also the reference B.Y -> B.X. Getting B.Y will now
-   * return 1 as it's inherited from A.Y.
+   * <li>A.Y is set to 1 which destroys the reference to A.X, and also the reference B.Y which points to B.X. Getting
+   * B.Y will now return 1 as it's inherited from A.Y.</li>
    * </ul>
    * <p>
    * Changes to the referenced property value will be propagated to listeners of this property.

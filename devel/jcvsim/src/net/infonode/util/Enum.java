@@ -51,7 +51,7 @@ public class Enum implements Serializable, Writable {
       VALUE_MAP.put(getClass(), values);
     }
 
-    values.put(new Integer(value), this);
+    values.put(Integer.valueOf(value), this);
   }
 
   /**
@@ -86,7 +86,7 @@ public class Enum implements Serializable, Writable {
     if (map == null)
       throw new IOException("Invalid enum class '" + cl + "'!");
 
-    Object object = map.get(new Integer(value));
+    Object object = map.get(Integer.valueOf(value));
 
     if (object == null)
       throw new IOException("Invalid enum value '" + value + "'!");

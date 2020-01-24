@@ -94,7 +94,7 @@ public class IntegerProperty extends NumberProperty {
    * @param value          the float value
    */
   public void set(Object valueContainer, int value) {
-    setValue(valueContainer, new Integer(value));
+    setValue(valueContainer, Integer.valueOf(value));
   }
 
 }

@@ -61,7 +61,7 @@ public class OneLevelHistory {
     /**
      * Linear interpolation between the two values
      *
-     * @param proportion How far between the two, 0->1
+     * @param proportion How far between the two, range 0 to 1
      * @return linear interpolation of value
      */
     public double linearInterpolate(double proportion) {
