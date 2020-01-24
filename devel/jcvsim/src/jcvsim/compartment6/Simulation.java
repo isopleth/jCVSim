@@ -96,11 +96,10 @@ public class Simulation {
      * every timestep.)
      *
      * @param stepout
-     * @param a
-     * @param dataCompressionFactor
-     * @param controlState
+     * @param parameters model parameters
+     * @param controlState State of the control buttons in the display.
      */
-    public void step(Output stepout, Parameters a, ControlState controlState) {
+    public void step(Output stepout, Parameters parameters, ControlState controlState) {
         double[] x0 = new double[controlState.dataCompressionFactor];
         double[] x1 = new double[controlState.dataCompressionFactor];
         double[] x2 = new double[controlState.dataCompressionFactor];
@@ -129,25 +128,28 @@ public class Simulation {
 
         // Calculate output values
         for (int index = 0; index < controlState.dataCompressionFactor; index++) {
-            Rkqc.rkqc_ptr(pressure, reflex_vector, a, htry, 0.001, hdid, hnext, reflex);
+            Rkqc.rkqc_ptr(pressure, reflex_vector, parameters, htry, 0.001, hdid, hnext, reflex);
 
-            pressure.time[1] = reflex.sinoatrialNode(pressure, reflex_vector, a, hdid[0]);
+            pressure.time[1] = reflex.sinoatrialNode(pressure, reflex_vector, parameters, hdid[0]);
 
-            Equation.elastance_ptr(pressure, reflex_vector, a);
+            Equation.elastance_ptr(pressure, reflex_vector, parameters);
 
-            Equation.eqns_ptr(pressure, a, reflex_vector);
+            Equation.eqns_ptr(pressure, parameters, reflex_vector);
 
-            reflex.queue(pressure, reflex_vector, a, hdid[0], controlState);
+            reflex.queue(pressure, reflex_vector, parameters,
+			 hdid[0], controlState);
 
             pressure.time[0] += hdid[0];
 
             htry = 0.001;
 
-            Equation.fixvolume(pressure, reflex_vector, a);
+            Equation.fixvolume(pressure, reflex_vector, parameters);
 
-            Simulator_numerics_new.numerics_new_ptr(pressure, reflex_vector, hdid[0], result);
+            Simulator_numerics_new.numerics_new_ptr(pressure, reflex_vector,
+						    hdid[0], result);
 
-            Simulator_numerics.numerics(pressure, reflex_vector, out, a);
+            Simulator_numerics.numerics(pressure, reflex_vector, out,
+					parameters);
 
             // simulation time
             stepout.time = pressure.time[0];
@@ -178,21 +180,21 @@ public class Simulation {
             vt[index] = reflex_vector.volume[0];
             rvc[index] = reflex_vector.rvEndSystolicCompliance;
             lvc[index] = reflex_vector.lvEndSystolicCompliance;
-            tbv[index] = a.get(ParameterName.TOTAL_BLOOD_VOLUME);
-            pth[index] = a.get(ParameterName.INTRA_THORACIC_PRESSURE);
+            tbv[index] = parameters.get(ParameterName.TOTAL_BLOOD_VOLUME);
+            pth[index] = parameters.get(ParameterName.INTRA_THORACIC_PRESSURE);
 
             // Check TBV
             //double total = 0;
             //int k;
             //for (k=0; k < 25; k++)
             // total += pressure.v[k]; 
-            //System.out.printf("TBV: %.2f, %.2f\n", a.get(PVName.PV70), total);
+            //System.out.printf("TBV: %.2f, %.2f\n", parameters.get(PVName.PV70), total);
             // Check TZPFV
             //double total = 0;
             //int k;
             //for (k=162; k < 168; k++)
-            //  total += a.get(k);
-            //System.out.printf("TZPFV: %.2f, %.2f\n", a.get(PVName.PV75), total);
+            //  total += parameters.get(k);
+            //System.out.printf("TZPFV: %.2f, %.2f\n", parameters.get(PVName.PV75), total);
         } // end for
 
         // Compress the output by applying turning algorithm
@@ -237,15 +239,15 @@ public class Simulation {
 
 // Total blood volume update constraint
 // Pv,new = Pv,old + (Vtot,new - Vtot,old) / Cv
-    public void updateTotalBloodVolume(double tbv_new, Parameters a) {
+    public void updateTotalBloodVolume(double tbv_new, Parameters parameters) {
         // venous compliance
-        double Cv = a.get(ParameterName.VEN_COMPLIANCE);
+        double Cv = parameters.get(ParameterName.VEN_COMPLIANCE);
         // central venous pressure
         double Pv_old = pressure.pressure[CENTRAL_VENOUS_CPI];
         // old total blood volume 
-        double tbv_old = a.get(ParameterName.TOTAL_BLOOD_VOLUME);
+        double tbv_old = parameters.get(ParameterName.TOTAL_BLOOD_VOLUME);
         // new total blood volume
-        a.put(ParameterName.TOTAL_BLOOD_VOLUME, tbv_new);
+        parameters.put(ParameterName.TOTAL_BLOOD_VOLUME, tbv_new);
         // recalculate central venous pressure
         pressure.pressure[CENTRAL_VENOUS_CPI] = Pv_old + (tbv_new - tbv_old) / Cv;
 
@@ -255,15 +257,15 @@ public class Simulation {
 
 // Total zero pressure filling volume update constraint
 // Pv,new = Pv,old + (V0,old - V0,new) / Cv
-    public void updateTotalZeroPressureFillingVolume(double zpfv_new, Parameters a) {
+    public void updateTotalZeroPressureFillingVolume(double zpfv_new, Parameters parameters) {
         // venous compliance
-        double Cv = a.get(ParameterName.VEN_COMPLIANCE);
+        double Cv = parameters.get(ParameterName.VEN_COMPLIANCE);
         // central venous pressure
         double Pv_old = pressure.pressure[CENTRAL_VENOUS_CPI];
         // old total zero pressure filling volume
-        double zpfv_old = a.get(ParameterName.TOTAL_ZPFV);
+        double zpfv_old = parameters.get(ParameterName.TOTAL_ZPFV);
         // new total zero pressure filling volume
-        a.put(ParameterName.TOTAL_ZPFV, zpfv_new);
+        parameters.put(ParameterName.TOTAL_ZPFV, zpfv_new);
         // recalculate central venous pressure
         pressure.pressure[CENTRAL_VENOUS_CPI] = Pv_old + (zpfv_old - zpfv_new) / Cv;
 
@@ -274,14 +276,14 @@ public class Simulation {
 // Intra-thoracic pressure update constraint
 // For all thoracic compartments.
 // P,new = P,old + (Pth,new - Pth,old)
-    public void updateIntrathoracicPressure(double Pth_new, Parameters a) {
+    public void updateIntrathoracicPressure(double Pth_new, Parameters parameters) {
         double P_old;
         System.out.printf("P,new = P,old + (Pth,new - Pth,old)\n");
 
         // old intra-thoracic pressure
-        double Pth_old = a.get(ParameterName.INTRA_THORACIC_PRESSURE);
+        double Pth_old = parameters.get(ParameterName.INTRA_THORACIC_PRESSURE);
         // new intra-thoracic pressure
-        a.put(ParameterName.INTRA_THORACIC_PRESSURE, Pth_new);
+        parameters.put(ParameterName.INTRA_THORACIC_PRESSURE, Pth_new);
         pressure.pressure[INTRA_THORACIC_CPI] = Pth_new;
 
         // left ventricle pressure
@@ -311,13 +313,13 @@ public class Simulation {
 
 // Compliance parameter update constraint
 // P,new = P,old * C,old / C,new + Pth * (1 - C,old / C,new)
-    public void updatePulmonaryArterialCompliance(double C_new, Parameters a) {
+    public void updatePulmonaryArterialCompliance(double C_new, Parameters parameters) {
         // old pulmonary arterial compliance
-        double C_old = a.get(ParameterName.PULM_ART_COMPLIANCE);
+        double C_old = parameters.get(ParameterName.PULM_ART_COMPLIANCE);
         // new pulmonary arterial compliance
-        a.put(ParameterName.PULM_ART_COMPLIANCE, C_new);
+        parameters.put(ParameterName.PULM_ART_COMPLIANCE, C_new);
         // old intra-thoracic pressure
-        double Pth = a.get(ParameterName.INTRA_THORACIC_PRESSURE);
+        double Pth = parameters.get(ParameterName.INTRA_THORACIC_PRESSURE);
         // old pulmonary arterial pressure
         double P_old = pressure.pressure[PULMONARY_ARTERIAL_CPI];
         // new pulomary arterial compliance
@@ -328,13 +330,13 @@ public class Simulation {
 
 // Compliance parameter update constraint
 // P,new = P,old * C,old / C,new + Pth * (1 - C,old / C,new)
-    public void updatePulmonaryVenousCompliance(double C_new, Parameters a) {
+    public void updatePulmonaryVenousCompliance(double C_new, Parameters parameters) {
         // old pulmonary arterial compliance
-        double C_old = a.get(ParameterName.PULM_VEN_COMPLIANCE);
+        double C_old = parameters.get(ParameterName.PULM_VEN_COMPLIANCE);
         // new pulmonary arterial compliance
-        a.put(ParameterName.PULM_VEN_COMPLIANCE, C_new);
+        parameters.put(ParameterName.PULM_VEN_COMPLIANCE, C_new);
         // old intra-thoracic pressure
-        double Pth = a.get(ParameterName.INTRA_THORACIC_PRESSURE);
+        double Pth = parameters.get(ParameterName.INTRA_THORACIC_PRESSURE);
         // old pulmonary arterial pressure
         double P_old = pressure.pressure[PULMONARY_VENOUS_CPI];
         // new pulomary arterial compliance
@@ -345,11 +347,11 @@ public class Simulation {
 
 // Compliance parameter update constraint
 // P,new = P,old * C,old / C,new
-    public void updateArterialCompliance(double C_new, Parameters a) {
+    public void updateArterialCompliance(double C_new, Parameters parameters) {
         // old pulmonary arterial compliance
-        double C_old = a.get(ParameterName.ART_COMPLIANCE);
+        double C_old = parameters.get(ParameterName.ART_COMPLIANCE);
         // new pulmonary arterial compliance
-        a.put(ParameterName.ART_COMPLIANCE, C_new);
+        parameters.put(ParameterName.ART_COMPLIANCE, C_new);
         // old pulmonary arterial pressure
         double P_old = pressure.pressure[ARTERIAL_CPI];
         // new pulomary arterial compliance
@@ -360,11 +362,11 @@ public class Simulation {
 
 // Compliance parameter update constraint
 // P,new = P,old * C,old / C,new
-    public void updateVenousCompliance(double C_new, Parameters a) {
+    public void updateVenousCompliance(double C_new, Parameters parameters) {
         // old pulmonary arterial compliance
-        double C_old = a.get(ParameterName.VEN_COMPLIANCE);
+        double C_old = parameters.get(ParameterName.VEN_COMPLIANCE);
         // new pulmonary arterial compliance
-        a.put(ParameterName.VEN_COMPLIANCE, C_new);
+        parameters.put(ParameterName.VEN_COMPLIANCE, C_new);
         // old pulmonary arterial pressure
         double P_old = pressure.pressure[CENTRAL_VENOUS_CPI];
         // new pulomary arterial compliance
@@ -374,8 +376,8 @@ public class Simulation {
     }
 
 // Update function for parameters with no update constraints
-    public void updateParameter(double newValue, Parameters a, ParameterName index) {
-        a.put(index, newValue);
+    public void updateParameter(double newValue, Parameters parameters, ParameterName index) {
+        parameters.put(index, newValue);
     }
 
 }
