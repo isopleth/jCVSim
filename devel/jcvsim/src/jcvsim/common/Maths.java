@@ -18,6 +18,7 @@ package jcvsim.common;
 
 import static java.lang.Double.isNaN;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import org.apache.commons.math3.util.FastMath;
 
 /**
@@ -216,9 +217,12 @@ public class Maths {
      * @return string representation of value rounded to the specified number of
      * digits
      */
-    public static String toStringSignificantFigures(Double value, int numberOfDigits) {
-        BigDecimal roundedValue = BigDecimal.valueOf(value).setScale(numberOfDigits,
-                BigDecimal.ROUND_HALF_UP);
+    public static String toStringSignificantFigures(Double value,
+						    int numberOfDigits) {
+        BigDecimal roundedValue = BigDecimal.valueOf(value).
+	    setScale(numberOfDigits,
+		     RoundingMode.HALF_UP);
+
         String returnString = roundedValue.toString();
         // Saw off trailing zeroes after the decimal point, leaving just the
         // first one.  i.e. 10.0000000 -> 10.0
